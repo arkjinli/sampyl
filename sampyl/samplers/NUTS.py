@@ -81,7 +81,7 @@ class NUTS(Sampler):
         if mass is None:
             self.mass = np.diag(self.scale.tovector())
         else:
-            assert np.all(mass.T - mass <= 1e-9), 'mass matrix is asymmetric'
+            assert np.all(mass.T - mass <= 1e-6), 'mass matrix is asymmetric'
             assert self.state.tovector().size == mass.shape[0], \
                 'mass matrix dimensionality does not match states'
             self.mass = mass
