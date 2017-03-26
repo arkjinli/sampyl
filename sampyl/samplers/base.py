@@ -78,8 +78,8 @@ class Sampler(object):
         pass
 
     def sample(self, num, burn=0, thin=1, n_chains=1, progress_bar=True):
-        
-        """ 
+
+        """
             Sample from :math:`P(X)`
 
             :param num: *int.* Number of samples to draw from :math:`P(X)`.
@@ -92,7 +92,7 @@ class Sampler(object):
                 process and the OS decides how to distribute the processes.
             :param progress_bar: (optional) *boolean.*
                 Show the progress bar, default = True.
-            :return: Record array with fields taken from arguments of 
+            :return: Record array with fields taken from arguments of
                 logp function.
 
         """
@@ -113,7 +113,7 @@ class Sampler(object):
                             progress_bar=progress_bar)
 
         if self.sampler is None:
-            self.sampler = (self.step() for _ in count(start=0, step=1))
+            self.sampler = (self._conditional_step() for _ in count(start=0, step=1))
 
         start_time = time.time() # For progress bar
         for i in range(num):

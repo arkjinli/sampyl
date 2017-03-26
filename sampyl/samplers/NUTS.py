@@ -17,7 +17,7 @@ import collections
 
 from ..core import np
 from .base import Sampler
-from .hamiltonian import energy, leapfrog, initial_momentum
+from .hamiltonian import energy, leapfrog, initial_momentum, default_mass
 import scipy.linalg as la
 
 
@@ -79,14 +79,14 @@ class NUTS(Sampler):
         super(NUTS, self).__init__(logp, start, **kwargs)
 
         if mass is None:
-            self.mass = np.diag(self.scale.tovector())
+            self.mass = default_mass(self.state, self.scale, self.conditional)
         else:
             assert np.all(mass.T - mass <= 1e-6), 'mass matrix is asymmetric'
             assert self.state.tovector().size == mass.shape[0], \
                 'mass matrix dimensionality does not match states'
             self.mass = mass
 
-        self.dim = self.state.tovector().size
+        self.dim = self.mass.shape[0]
         self.mass_chol = la.cholesky(self.mass, lower=True)
         self.step_size = step_size / self.dim**(1/4)
         self.adapt_steps = adapt_steps
@@ -106,7 +106,7 @@ class NUTS(Sampler):
         H = self.model.logp
         dH = self.model.grad
         x = self.state
-        r0 = initial_momentum(self.dim, self.mass_chol)
+        r0 = initial_momentum(x, self.dim, self.mass_chol)
         u = np.random.uniform()
         e = self.step_size
         xn, xp, rn, rp, y = x, x, r0, r0, x
@@ -125,8 +125,8 @@ class NUTS(Sampler):
                 y = x1
 
             dx = (xp - xn).tovector()
-            s = s1 * (np.dot(dx, rn) >= 0) * \
-                     (np.dot(dx, rp) >= 0)
+            s = s1 * (np.dot(dx, rn.tovector()) >= 0) * \
+                     (np.dot(dx, rp.tovector()) >= 0)
             n = n + n1
             j = j + 1
 
@@ -179,7 +179,7 @@ def buildtree(x, r, u, v, j, e, x0, r0, H, dH, Emax, mass_chol):
             na1 = na1 + na2
 
             dx = (xp - xn).tovector()
-            s1 = s2 * (np.dot(dx, rn) >= 0) * \
-                      (np.dot(dx, rp) >= 0)
+            s1 = s2 * (np.dot(dx, rn.tovector()) >= 0) * \
+                      (np.dot(dx, rp.tovector()) >= 0)
             n1 = n1 + n2
         return xn, rn, xp, rp, x1, n1, s1, a1, na1
